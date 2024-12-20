@@ -5,6 +5,7 @@ from tkinter import ttk
 from PIL import Image
 from transformers import ViTImageProcessor, ViTForImageClassification
 import torch
+from datetime import datetime
 
 class ImageOrganizer:
     def __init__(self, root):
@@ -32,6 +33,12 @@ class ImageOrganizer:
 
     def organize_images(self):
         desktop = os.path.expanduser("~/Desktop")
+        
+        # Create dated folder
+        current_date = datetime.now().strftime("%Y-%m-%d")
+        organized_folder = os.path.join(desktop, f"Organized_Images_{current_date}")
+        os.makedirs(organized_folder, exist_ok=True)
+        
         image_extensions = ('.jpg', '.jpeg', '.png', '.gif', '.bmp')
         
         # Get all image files
@@ -55,20 +62,26 @@ class ImageOrganizer:
                 predicted = outputs.logits.argmax(-1).item()
                 category = self.model.config.id2label[predicted]
                 
-                # Create category folder
-                category_folder = os.path.join(desktop, category)
+                # Clean up category name
+                category = category.replace("_", " ").title()
+                
+                # Create category folder inside dated folder
+                category_folder = os.path.join(organized_folder, category)
                 os.makedirs(category_folder, exist_ok=True)
                 
-                # Move file
-                new_filepath = os.path.join(category_folder, filename)
-                if os.path.exists(new_filepath):
-                    base, ext = os.path.splitext(filename)
-                    counter = 1
-                    while os.path.exists(new_filepath):
-                        new_filename = f"{base}_{counter}{ext}"
-                        new_filepath = os.path.join(category_folder, new_filename)
-                        counter += 1
+                # Generate new filename with category and counter
+                base, ext = os.path.splitext(filename)
+                new_filename = f"{category}_{i+1}{ext}"
+                new_filepath = os.path.join(category_folder, new_filename)
                 
+                # Handle duplicates
+                counter = 1
+                while os.path.exists(new_filepath):
+                    new_filename = f"{category}_{i+1}_{counter}{ext}"
+                    new_filepath = os.path.join(category_folder, new_filename)
+                    counter += 1
+                
+                # Move and rename file
                 shutil.move(filepath, new_filepath)
                 
                 # Update progress
@@ -79,9 +92,9 @@ class ImageOrganizer:
             except Exception as e:
                 print(f"Error processing {filename}: {str(e)}")
         
-        self.status_label.config(text="Organization complete!")
+        self.status_label.config(text=f"Organization complete! Images saved in {organized_folder}")
 
 if __name__ == "__main__":
     root = Tk()
     app = ImageOrganizer(root)
-    root.mainloop() 
+    root.mainloop()
