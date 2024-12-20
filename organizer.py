@@ -69,15 +69,31 @@ class ImageOrganizer:
                 category_folder = os.path.join(organized_folder, category)
                 os.makedirs(category_folder, exist_ok=True)
                 
-                # Generate new filename with category and counter
+                # Find the next available number for this category
+                existing_files = os.listdir(category_folder)
+                existing_numbers = []
+                for f in existing_files:
+                    if f.startswith(category):
+                        try:
+                            # Extract number from filenames like "Category_1.jpg" or "Category_1_1.jpg"
+                            num = int(f.split('_')[1].split('.')[0])
+                            existing_numbers.append(num)
+                        except (IndexError, ValueError):
+                            continue
+                
+                next_number = 1
+                if existing_numbers:
+                    next_number = max(existing_numbers) + 1
+                
+                # Generate new filename with sequential numbering
                 base, ext = os.path.splitext(filename)
-                new_filename = f"{category}_{i+1}{ext}"
+                new_filename = f"{category}_{next_number}{ext}"
                 new_filepath = os.path.join(category_folder, new_filename)
                 
-                # Handle duplicates
+                # Handle duplicates (just in case)
                 counter = 1
                 while os.path.exists(new_filepath):
-                    new_filename = f"{category}_{i+1}_{counter}{ext}"
+                    new_filename = f"{category}_{next_number}_{counter}{ext}"
                     new_filepath = os.path.join(category_folder, new_filename)
                     counter += 1
                 
